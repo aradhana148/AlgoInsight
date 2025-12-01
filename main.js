@@ -3,13 +3,13 @@
 let currentStart = null;
 let currentEnd = null;
 
-const algoSelect = document.getElementById("algoSelect");
-const startInput = document.getElementById("startNode");
-const endInput   = document.getElementById("endNode");
-const runBtn     = document.getElementById("runBtn");
-const resetBtn   = document.getElementById("resetBtn");
-const statusView = document.getElementById("statusView");
-const pqView     = document.getElementById("pqView");   // for heap display
+const algoSelect       = document.getElementById("algoSelect");
+const startInput       = document.getElementById("startNode");
+const endInput         = document.getElementById("endNode");
+const runBtn           = document.getElementById("runBtn");
+const resetBtn         = document.getElementById("resetBtn");
+const statusView       = document.getElementById("statusView");
+const pqView           = document.getElementById("pqView");   // for heap display
 const toggleNodesBtn   = document.getElementById("toggleNodesBtn");
 const toggleWeightsBtn = document.getElementById("toggleWeightsBtn");
 
@@ -56,7 +56,6 @@ function loadDefaultCityGraph() {
   }
 
   // 2) ensure connectivity: random spanning tree
-  // each node i>0 connects to one random previous node j<i
   for (let i = 1; i < NUM_NODES; i++) {
     const u = nodeIds[i];
     const v = nodeIds[Math.floor(Math.random() * i)];
@@ -80,7 +79,6 @@ function loadDefaultCityGraph() {
       const dy = nu.y - nv.y;
       const dist = Math.sqrt(dx * dx + dy * dy);
 
-      // fairly dense local roads if close
       if (dist < R && Math.random() < 0.35) {
         addEdgeAuto(u, v);
       }
@@ -99,6 +97,7 @@ function loadDefaultCityGraph() {
 
   drawGraph();
 }
+
 
 // ------------------ STATUS + PQ RENDERING ------------------ //
 
@@ -183,7 +182,9 @@ function renderPQ() {
   pqView.innerHTML = "";
 }
 
-// when algorithm selection changes, clear annotations + status + heap
+
+// ------------------ ALGO SELECT CHANGE ------------------ //
+
 algoSelect.onchange = () => {
   const algo = algoSelect.value;
   vizState.tin      = [];
@@ -196,10 +197,20 @@ algoSelect.onchange = () => {
   vizState.status   = "";
   vizState.visitedF.clear();
   vizState.visitedB.clear();
+
+  // 🔵 clear edge overlays when switching algorithms
+  if (vizState.pathEdges)    vizState.pathEdges.clear();
+  if (vizState.exploredEdges) vizState.exploredEdges.clear();
+  if (vizState.exploredF)    vizState.exploredF.clear();
+  if (vizState.exploredB)    vizState.exploredB.clear();
+
   renderStatus();
   renderPQ();
   drawGraph();
 };
+
+
+// ------------------ RUN BUTTON ------------------ //
 
 runBtn.onclick = () => {
   const algo = algoSelect.value;
@@ -268,6 +279,12 @@ runBtn.onclick = () => {
   vizState.visitedF.clear();
   vizState.visitedB.clear();
 
+  // 🔵 clear edge overlays for a fresh run
+  if (vizState.pathEdges)    vizState.pathEdges.clear();
+  if (vizState.exploredEdges) vizState.exploredEdges.clear();
+  if (vizState.exploredF)    vizState.exploredF.clear();
+  if (vizState.exploredB)    vizState.exploredB.clear();
+
   // Clear status for new run
   vizState.status = "";
   renderStatus();
@@ -292,6 +309,9 @@ runBtn.onclick = () => {
   if (it) runAnimation(it);
 };
 
+
+// ------------------ RESET BUTTON ------------------ //
+
 resetBtn.onclick = () => {
   // rebuild the default random city graph
   loadDefaultCityGraph();
@@ -315,10 +335,20 @@ resetBtn.onclick = () => {
   vizState.status   = "";
   vizState.visitedF.clear();
   vizState.visitedB.clear();
+
+  // 🔵 also clear edge overlays
+  if (vizState.pathEdges)    vizState.pathEdges.clear();
+  if (vizState.exploredEdges) vizState.exploredEdges.clear();
+  if (vizState.exploredF)    vizState.exploredF.clear();
+  if (vizState.exploredB)    vizState.exploredB.clear();
+
   renderStatus();
   renderPQ();
   drawGraph();
 };
+
+
+// ------------------ TOGGLE BUTTONS ------------------ //
 
 if (toggleNodesBtn) {
   toggleNodesBtn.onclick = () => {
@@ -334,6 +364,8 @@ if (toggleWeightsBtn) {
   };
 }
 
+
+// ------------------ ANIMATION LOOP ------------------ //
 
 function runAnimation(iterator) {
   const speedSlider = document.getElementById("speedSlider");
@@ -382,7 +414,7 @@ function animate(evt) {
     renderPQ();
   }
 
-  // generic visited/frontier
+  // generic visited/frontier + edge exploration
   if (evt.type === "visit") {
     if (typeof evt.node === "number") {
       vizState.visited.add(evt.node);
@@ -392,7 +424,23 @@ function animate(evt) {
   } else if (evt.type === "relax" || evt.type === "discover") {
     const [u, v] = evt.edge;
     vizState.frontier.add(v);
-    vizState.activeEdge = edgeKey(u, v);
+    const key = edgeKey(u, v);
+
+    // mark explored edges for coloring
+    if (algo === "astar2" && evt.dir) {
+      if (!vizState.exploredF) vizState.exploredF = new Set();
+      if (!vizState.exploredB) vizState.exploredB = new Set();
+      if (evt.dir === "F") {
+        vizState.exploredF.add(key);
+      } else if (evt.dir === "B") {
+        vizState.exploredB.add(key);
+      }
+    } else {
+      if (!vizState.exploredEdges) vizState.exploredEdges = new Set();
+      vizState.exploredEdges.add(key);
+    }
+
+    vizState.activeEdge = key;
   } else if (evt.type === "mst-add") {
     const [u, v] = evt.edge;
     const key = edgeKey(u, v);
@@ -418,11 +466,24 @@ function animate(evt) {
     vizState.activeEdge = null;
     vizState.path.clear();
 
+    // 🔶 build node path set
     if (evt.path) {
       for (const node of evt.path) {
         vizState.path.add(node);
       }
     }
+
+    // 🔶 build edge path set (for orange highlighting)
+    if (!vizState.pathEdges) vizState.pathEdges = new Set();
+    vizState.pathEdges.clear();
+    if (evt.path && evt.path.length >= 2) {
+      for (let i = 0; i + 1 < evt.path.length; i++) {
+        const u = evt.path[i];
+        const v = evt.path[i + 1];
+        vizState.pathEdges.add(edgeKey(u, v));
+      }
+    }
+
     if (evt.mstEdges) {
       for (const [u, v] of evt.mstEdges) {
         vizState.mstEdges.add(edgeKey(u, v));
@@ -457,6 +518,7 @@ function animate(evt) {
 
   drawGraph();
 }
+
 
 // build a big default city graph on page load
 window.addEventListener("load", () => {

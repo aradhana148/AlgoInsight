@@ -74,6 +74,7 @@ function heuristic(graph, u, goal) {
 function* astarBidirectional(graph, start, end) {
   const n = graph.nodes.length;
 
+  // basic sanity
   if (
     typeof start !== "number" || typeof end !== "number" ||
     start < 0 || start >= n || end < 0 || end >= n ||
@@ -88,20 +89,21 @@ function* astarBidirectional(graph, start, end) {
     return;
   }
 
+  // forward side
   const gF = Array(n).fill(Infinity);
   const fF = Array(n).fill(Infinity);
   const parentF = Array(n).fill(-1);
+  const visitedF = Array(n).fill(false);
+  const openF = []; // { node, g, f }
 
+  // backward side
   const gB = Array(n).fill(Infinity);
   const fB = Array(n).fill(Infinity);
   const parentB = Array(n).fill(-1);
-
-  const visitedF = Array(n).fill(false);
   const visitedB = Array(n).fill(false);
-
-  const openF = []; // { node, g, f }
   const openB = []; // { node, g, f }
 
+  // init
   gF[start] = 0;
   fF[start] = heuristic(graph, start, end);
   openF.push({ node: start, g: gF[start], f: fF[start] });
@@ -110,9 +112,7 @@ function* astarBidirectional(graph, start, end) {
   fB[end] = heuristic(graph, end, start);
   openB.push({ node: end, g: gB[end], f: fB[end] });
 
-  let bestMeet = -1;
-  let bestDist = Infinity;
-
+  // helpers
   function popMin(queue) {
     if (queue.length === 0) return null;
     queue.sort((a, b) => a.f - b.f);
@@ -137,7 +137,7 @@ function* astarBidirectional(graph, start, end) {
       pathF.push(cur);
       cur = parentF[cur];
     }
-    pathF.reverse();
+    pathF.reverse(); // [start, ..., meet]
 
     // backward: meet -> ... -> end
     const pathB = [];
@@ -146,25 +146,23 @@ function* astarBidirectional(graph, start, end) {
       pathB.push(cur);
       cur = parentB[cur];
     }
-    // pathB = [meet, ..., end], so drop meet to avoid duplicate
+    // pathB = [meet, ..., end], so drop the first element to avoid repeating 'meet'
     return pathF.concat(pathB.slice(1));
   }
 
+  let meetNode = -1;
+  let bestDist = Infinity;
+
+  // main loop
   while (openF.length > 0 && openB.length > 0) {
+    // look at current bests
     openF.sort((a, b) => a.f - b.f);
     openB.sort((a, b) => a.f - b.f);
 
     const topF = openF[0];
     const topB = openB[0];
 
-    // termination: if best possible new path can't beat bestDist
-    if (
-      bestMeet !== -1 &&
-      (topF ? topF.f : Infinity) + (topB ? topB.f : Infinity) >= bestDist
-    ) {
-      break;
-    }
-
+    // choose which side to expand (smaller f)
     const expandForward = (!topB || (topF && topF.f <= topB.f));
 
     if (expandForward) {
@@ -174,6 +172,7 @@ function* astarBidirectional(graph, start, end) {
       if (visitedF[u]) continue;
       visitedF[u] = true;
 
+      // forward visit event
       yield {
         type: "visit",
         node: u,
@@ -182,14 +181,14 @@ function* astarBidirectional(graph, start, end) {
         pqTopB: snapshotTopB(),
       };
 
+      // if backward already saw this node -> we met
       if (visitedB[u]) {
-        const candDist = gF[u] + gB[u];
-        if (candDist < bestDist) {
-          bestDist = candDist;
-          bestMeet = u;
-        }
+        meetNode = u;
+        bestDist = gF[u] + gB[u];
+        break;
       }
 
+      // relax forward neighbors
       for (const { v, w } of graph.adj.get(u) || []) {
         if (!graph.nodes[v]) continue;
         const ng = gF[u] + w;
@@ -198,6 +197,7 @@ function* astarBidirectional(graph, start, end) {
           fF[v] = ng + heuristic(graph, v, end);
           parentF[v] = u;
           openF.push({ node: v, g: gF[v], f: fF[v] });
+
           yield {
             type: "relax",
             edge: [u, v],
@@ -214,6 +214,7 @@ function* astarBidirectional(graph, start, end) {
       if (visitedB[u]) continue;
       visitedB[u] = true;
 
+      // backward visit event
       yield {
         type: "visit",
         node: u,
@@ -222,14 +223,14 @@ function* astarBidirectional(graph, start, end) {
         pqTopB: snapshotTopB(),
       };
 
+      // if forward already saw this node -> we met
       if (visitedF[u]) {
-        const candDist = gF[u] + gB[u];
-        if (candDist < bestDist) {
-          bestDist = candDist;
-          bestMeet = u;
-        }
+        meetNode = u;
+        bestDist = gF[u] + gB[u];
+        break;
       }
 
+      // relax backward neighbors (same adj, assuming undirected graph)
       for (const { v, w } of graph.adj.get(u) || []) {
         if (!graph.nodes[v]) continue;
         const ng = gB[u] + w;
@@ -238,6 +239,7 @@ function* astarBidirectional(graph, start, end) {
           fB[v] = ng + heuristic(graph, v, start);
           parentB[v] = u;
           openB.push({ node: v, g: gB[v], f: fB[v] });
+
           yield {
             type: "relax",
             edge: [u, v],
@@ -250,12 +252,13 @@ function* astarBidirectional(graph, start, end) {
     }
   }
 
-  if (bestMeet === -1 || bestDist === Infinity) {
+  if (meetNode === -1 || !Number.isFinite(bestDist)) {
+    // no intersection -> no path
     yield { type: "done", noPath: true, pqTopF: [], pqTopB: [] };
     return;
   }
 
-  const path = reconstructPath(bestMeet);
+  const path = reconstructPath(meetNode);
   yield {
     type: "done",
     path,
@@ -264,4 +267,5 @@ function* astarBidirectional(graph, start, end) {
     pqTopB: [],
   };
 }
+
 
