@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>AlgoInsight</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+  <div id="sidebar">
+    <h1>AlgoInsight</h1>
+
+    <label>Algorithm</label>
+    <select id="algoSelect">
+      <option value="dijkstra">Dijkstra</option>
+      <option value="astar">A*</option>
+      <option value="astar2">Bidirectional A*</option>
+      <option value="bfs">BFS</option>
+      <option value="dfs">DFS</option>
+      <option value="mst">MST (Kruskal)</option>
+    </select>
+
+    <label>Start Node</label>
+    <input id="startNode" placeholder="0">
+
+    <label>End Node</label>
+    <input id="endNode" placeholder="5">
+
+    <label for="speedSlider">Speed</label>
+    <input id="speedSlider" type="range" min="0" max="1000" value="600">
+    <small style="color:#aaa;">← slower &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; faster →</small>
+    <br>
+    <br>
+    <button id="runBtn">Run</button>
+    <button id="resetBtn">Reset</button>  
+    <button id="toggleNodesBtn">Toggle Node Shape</button>
+    <button id="toggleWeightsBtn">Toggle Edge Weights</button>
+
+    <div id="statusView"></div>
+    <div id="pqView"></div>
+  </div>
+
+  <svg id="canvas"></svg>
+
+  <script src="graph.js"></script>
+  <script src="algorithms/dijkstra.js"></script>
+  <script src="algorithms/astar.js"></script>
+  <script src="algorithms/traversals.js"></script>
+  <script src="algorithms/mst_kruskal.js"></script>
+  <script src="render.js"></script>
+  <script src="city_graph.js"></script>
+  <script src="main.js"></script>
+</body>
+</html>

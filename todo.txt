@@ -1,0 +1,6 @@
+clear full graph
+edge coloring
+import graph
+make default city like
+add algos - check bi a*, yen, tsp
+

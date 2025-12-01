@@ -1,0 +1,47 @@
+body {
+    margin: 0;
+    font-family: system-ui, sans-serif;
+    display: flex;
+    height: 100vh;
+  }
+  
+  #sidebar {
+    width: 260px;
+    background: #111;
+    color: #eee;
+    padding: 20px;
+    box-sizing: border-box;
+  }
+  
+  #sidebar h1 {
+    font-size: 20px;
+    margin-top: 0;
+  }
+  
+  #sidebar select, #sidebar input {
+    width: 100%;
+    margin: 8px 0;
+    padding: 6px;
+    border-radius: 6px;
+    border: none;
+  }
+  
+  #canvas {
+    flex: 1;
+    background: #1a1a1a;
+    cursor: crosshair;
+  }
+  
+  #statusView {
+      
+    font-family: "Inconsolata", "JetBrains Mono", monospace;
+    font-size: 13px;
+    color: #f0f0f0;
+  
+    margin-top: 10px;
+    white-space: pre-wrap;
+  }
+  
+  
+  
+  
