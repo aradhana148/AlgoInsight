@@ -307,14 +307,17 @@ function drawGraph() {
     canvas.appendChild(circ);
 
     // node id label (center)
-    const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
-    label.setAttribute("x", n.x);
-    label.setAttribute("y", n.y + 4);
-    label.setAttribute("text-anchor", "middle");
-    label.setAttribute("font-size", "12px");
-    label.setAttribute("fill", "#000");
-    label.textContent = n.id;
-    canvas.appendChild(label);
+    // node id label (center)
+    if (!vizState.hideCircles) {
+      const label = document.createElementNS("http://www.w3.org/2000/svg", "text");
+      label.setAttribute("x", n.x);
+      label.setAttribute("y", n.y + 4);
+      label.setAttribute("text-anchor", "middle");
+      label.setAttribute("font-size", "12px");
+      label.setAttribute("fill", "#000");
+      label.textContent = n.id;
+      canvas.appendChild(label);
+    }
 
     // ---- Under-node info: DFS tin/tout OR BFS level ----
     if (algo === "dfs") {

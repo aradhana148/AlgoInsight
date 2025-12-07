@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <title>AlgoInsight</title>
@@ -29,13 +30,24 @@
 
     <label for="speedSlider">Speed</label>
     <input id="speedSlider" type="range" min="0" max="1000" value="600">
-    <small style="color:#aaa;">← slower &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; faster →</small>
+    <small style="color:#aaa;">← slower
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+      faster →</small>
+
     <br>
-    <br>
-    <button id="runBtn">Run</button>
-    <button id="resetBtn">Reset</button>  
-    <button id="toggleNodesBtn">Toggle Node Shape</button>
-    <button id="toggleWeightsBtn">Toggle Edge Weights</button>
+    <div class="button-group">
+      <button id="runBtn" class="primary-btn">Run</button>
+      <button id="resetBtn" class="secondary-btn">Reset</button>
+    </div>
+
+    <div class="toggle-group">
+      <button id="toggleNodesBtn" class="toggle-btn">Toggle Node Shape</button>
+      <br>
+      <button id="toggleWeightsBtn" class="toggle-btn">Toggle Edge Weights</button>
+      <br>
+      <button id="clearBtn" class="toggle-btn" style="background: #ef4444; border-color: #b91c1c; color: white;">Clear
+        Graph</button>
+    </div>
 
     <div id="statusView"></div>
     <div id="pqView"></div>
@@ -52,4 +64,5 @@
   <script src="city_graph.js"></script>
   <script src="main.js"></script>
 </body>
+
 </html>

@@ -2,116 +2,47 @@
 
 let currentStart = null;
 let currentEnd = null;
+let currentAnimationTimer = null;
 
-const algoSelect       = document.getElementById("algoSelect");
-const startInput       = document.getElementById("startNode");
-const endInput         = document.getElementById("endNode");
-const runBtn           = document.getElementById("runBtn");
-const resetBtn         = document.getElementById("resetBtn");
-const statusView       = document.getElementById("statusView");
-const pqView           = document.getElementById("pqView");   // for heap display
-const toggleNodesBtn   = document.getElementById("toggleNodesBtn");
+function stopAnimation() {
+  if (currentAnimationTimer) {
+    clearTimeout(currentAnimationTimer);
+    currentAnimationTimer = null;
+  }
+}
+
+const algoSelect = document.getElementById("algoSelect");
+const startInput = document.getElementById("startNode");
+const endInput = document.getElementById("endNode");
+const runBtn = document.getElementById("runBtn");
+const resetBtn = document.getElementById("resetBtn");
+const clearBtn = document.getElementById("clearBtn");
+const statusView = document.getElementById("statusView");
+const pqView = document.getElementById("pqView");   // for heap display
+const toggleNodesBtn = document.getElementById("toggleNodesBtn");
 const toggleWeightsBtn = document.getElementById("toggleWeightsBtn");
 
 
-// ------------------ DEFAULT "CITY" GRAPH ------------------ //
-
-function loadDefaultCityGraph() {
-  // fresh graph
-  graph = new Graph();
-
-  const canvas = document.getElementById("canvas");
-  let W = canvas.clientWidth;
-  let H = canvas.clientHeight;
-
-  // fallback if width/height is 0 on first load
-  if (!W || !H) {
-    W = 800;
-    H = 500;
-  }
-
-  const NUM_NODES = 230;  // tweak if you want bigger/smaller
-  const marginX = 40;
-  const marginY = 40;
-
-  const nodeIds = [];
-
-  // helper: add edge with Euclidean weight
-  function addEdgeAuto(u, v) {
-    const nu = graph.nodes[u];
-    const nv = graph.nodes[v];
-    if (!nu || !nv) return;
-    const dx = nu.x - nv.x;
-    const dy = nu.y - nv.y;
-    const w = Math.sqrt(dx * dx + dy * dy);
-    graph.addEdge(u, v, w);
-  }
-
-  // 1) place nodes randomly over almost the whole window
-  for (let i = 0; i < NUM_NODES; i++) {
-    const x = marginX + Math.random() * (W - 2 * marginX);
-    const y = marginY + Math.random() * (H - 2 * marginY);
-    const id = graph.addNode(x, y);
-    nodeIds.push(id);
-  }
-
-  // 2) ensure connectivity: random spanning tree
-  for (let i = 1; i < NUM_NODES; i++) {
-    const u = nodeIds[i];
-    const v = nodeIds[Math.floor(Math.random() * i)];
-    addEdgeAuto(u, v);
-  }
-
-  // 3) add local "street" edges based on distance
-  const R = Math.min(W, H) * 0.18;  // connection radius
-
-  for (let i = 0; i < NUM_NODES; i++) {
-    const u = nodeIds[i];
-    const nu = graph.nodes[u];
-    if (!nu) continue;
-
-    for (let j = i + 1; j < NUM_NODES; j++) {
-      const v = nodeIds[j];
-      const nv = graph.nodes[v];
-      if (!nv) continue;
-
-      const dx = nu.x - nv.x;
-      const dy = nu.y - nv.y;
-      const dist = Math.sqrt(dx * dx + dy * dy);
-
-      if (dist < R && Math.random() < 0.35) {
-        addEdgeAuto(u, v);
-      }
-    }
-  }
-
-  // 4) add a few long “expressway/flyover” edges
-  const EXTRA_LONG_EDGES = 30;
-  for (let k = 0; k < EXTRA_LONG_EDGES; k++) {
-    const u = nodeIds[Math.floor(Math.random() * NUM_NODES)];
-    const v = nodeIds[Math.floor(Math.random() * NUM_NODES)];
-    if (u !== v) {
-      addEdgeAuto(u, v);
-    }
-  }
-
-  drawGraph();
-}
+// loadDefaultCityGraph is now loaded from city_graph.js
 
 
 // ------------------ STATUS + PQ RENDERING ------------------ //
 
 function renderStatus() {
   if (!statusView) return;
-  statusView.textContent = vizState.status || "";
+  const text = vizState.status || "";
+  statusView.textContent = text;
+
+  // Hide if empty
+  statusView.style.display = text.trim() ? "block" : "none";
 }
 
 // render the top of the heap(s) into #pqView
 function renderPQ() {
   if (!pqView) return;
 
-  const algo   = vizState.currentAlgo;
-  const pqTop  = vizState.pqTop  || [];
+  const algo = vizState.currentAlgo;
+  const pqTop = vizState.pqTop || [];
   const pqTopF = vizState.pqTopF || [];
   const pqTopB = vizState.pqTopB || [];
 
@@ -186,23 +117,24 @@ function renderPQ() {
 // ------------------ ALGO SELECT CHANGE ------------------ //
 
 algoSelect.onchange = () => {
+  stopAnimation();
   const algo = algoSelect.value;
-  vizState.tin      = [];
-  vizState.tout     = [];
-  vizState.level    = [];
-  vizState.pqTop    = [];
-  vizState.pqTopF   = [];
-  vizState.pqTopB   = [];
+  vizState.tin = [];
+  vizState.tout = [];
+  vizState.level = [];
+  vizState.pqTop = [];
+  vizState.pqTopF = [];
+  vizState.pqTopB = [];
   vizState.currentAlgo = algo;
-  vizState.status   = "";
+  vizState.status = "";
   vizState.visitedF.clear();
   vizState.visitedB.clear();
 
   // 🔵 clear edge overlays when switching algorithms
-  if (vizState.pathEdges)    vizState.pathEdges.clear();
+  if (vizState.pathEdges) vizState.pathEdges.clear();
   if (vizState.exploredEdges) vizState.exploredEdges.clear();
-  if (vizState.exploredF)    vizState.exploredF.clear();
-  if (vizState.exploredB)    vizState.exploredB.clear();
+  if (vizState.exploredF) vizState.exploredF.clear();
+  if (vizState.exploredB) vizState.exploredB.clear();
 
   renderStatus();
   renderPQ();
@@ -213,6 +145,7 @@ algoSelect.onchange = () => {
 // ------------------ RUN BUTTON ------------------ //
 
 runBtn.onclick = () => {
+  stopAnimation();
   const algo = algoSelect.value;
   vizState.currentAlgo = algo;
 
@@ -255,13 +188,13 @@ runBtn.onclick = () => {
   vizState.mstEdges.clear();
   vizState.activeEdge = null;
   vizState.startNode = algo === "mst" ? null : currentStart;
-  vizState.endNode   = (algo === "mst" || currentEnd === -1 || currentEnd === null)
+  vizState.endNode = (algo === "mst" || currentEnd === -1 || currentEnd === null)
     ? null
     : currentEnd;
 
   // Clear DFS/BFS annotations when not used
   if (algo !== "dfs") {
-    vizState.tin  = [];
+    vizState.tin = [];
     vizState.tout = [];
   }
   if (algo !== "bfs") {
@@ -270,7 +203,7 @@ runBtn.onclick = () => {
 
   // Clear PQ info when not Dijkstra/A* / A*2
   if (algo !== "dijkstra" && algo !== "astar" && algo !== "astar2") {
-    vizState.pqTop  = [];
+    vizState.pqTop = [];
     vizState.pqTopF = [];
     vizState.pqTopB = [];
   }
@@ -280,10 +213,10 @@ runBtn.onclick = () => {
   vizState.visitedB.clear();
 
   // 🔵 clear edge overlays for a fresh run
-  if (vizState.pathEdges)    vizState.pathEdges.clear();
+  if (vizState.pathEdges) vizState.pathEdges.clear();
   if (vizState.exploredEdges) vizState.exploredEdges.clear();
-  if (vizState.exploredF)    vizState.exploredF.clear();
-  if (vizState.exploredB)    vizState.exploredB.clear();
+  if (vizState.exploredF) vizState.exploredF.clear();
+  if (vizState.exploredB) vizState.exploredB.clear();
 
   // Clear status for new run
   vizState.status = "";
@@ -313,6 +246,7 @@ runBtn.onclick = () => {
 // ------------------ RESET BUTTON ------------------ //
 
 resetBtn.onclick = () => {
+  stopAnimation();
   // rebuild the default random city graph
   loadDefaultCityGraph();
 
@@ -323,29 +257,70 @@ resetBtn.onclick = () => {
   vizState.mstEdges.clear();
   vizState.activeEdge = null;
   vizState.startNode = null;
-  vizState.endNode   = null;
+  vizState.endNode = null;
 
-  vizState.tin      = [];
-  vizState.tout     = [];
-  vizState.level    = [];
-  vizState.pqTop    = [];
-  vizState.pqTopF   = [];
-  vizState.pqTopB   = [];
+  vizState.tin = [];
+  vizState.tout = [];
+  vizState.level = [];
+  vizState.pqTop = [];
+  vizState.pqTopF = [];
+  vizState.pqTopB = [];
   vizState.currentAlgo = null;
-  vizState.status   = "";
+  vizState.status = "";
   vizState.visitedF.clear();
   vizState.visitedB.clear();
 
   // 🔵 also clear edge overlays
-  if (vizState.pathEdges)    vizState.pathEdges.clear();
+  if (vizState.pathEdges) vizState.pathEdges.clear();
   if (vizState.exploredEdges) vizState.exploredEdges.clear();
-  if (vizState.exploredF)    vizState.exploredF.clear();
-  if (vizState.exploredB)    vizState.exploredB.clear();
+  if (vizState.exploredF) vizState.exploredF.clear();
+  if (vizState.exploredB) vizState.exploredB.clear();
 
   renderStatus();
   renderPQ();
   drawGraph();
 };
+
+
+// ------------------ CLEAR BUTTON ------------------ //
+
+if (clearBtn) {
+  clearBtn.onclick = () => {
+    stopAnimation();
+
+    // Empty graph
+    graph = new Graph();
+
+    // clear vizState overlays
+    vizState.visited.clear();
+    vizState.frontier.clear();
+    vizState.path.clear();
+    vizState.mstEdges.clear();
+    vizState.activeEdge = null;
+    vizState.startNode = null;
+    vizState.endNode = null;
+
+    vizState.tin = [];
+    vizState.tout = [];
+    vizState.level = [];
+    vizState.pqTop = [];
+    vizState.pqTopF = [];
+    vizState.pqTopB = [];
+    vizState.currentAlgo = null;
+    vizState.status = "";
+    vizState.visitedF.clear();
+    vizState.visitedB.clear();
+
+    if (vizState.pathEdges) vizState.pathEdges.clear();
+    if (vizState.exploredEdges) vizState.exploredEdges.clear();
+    if (vizState.exploredF) vizState.exploredF.clear();
+    if (vizState.exploredB) vizState.exploredB.clear();
+
+    renderStatus();
+    renderPQ();
+    drawGraph();
+  };
+}
 
 
 // ------------------ TOGGLE BUTTONS ------------------ //
@@ -379,13 +354,14 @@ function runAnimation(iterator) {
     animate(res.value);
 
     const sliderVal = Number(speedSlider.value);
-    const minDelay = 50;
+    const minDelay = 10;
     const maxDelay = 1000;
     const delay = maxDelay - (sliderVal / 1000) * (maxDelay - minDelay);
 
-    setTimeout(step, delay);
+    currentAnimationTimer = setTimeout(step, delay);
   }
 
+  stopAnimation(); // ensure any previous is gone (double safety)
   step();
 }
 

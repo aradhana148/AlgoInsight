@@ -1,47 +1,122 @@
 body {
-    margin: 0;
-    font-family: system-ui, sans-serif;
-    display: flex;
-    height: 100vh;
-  }
-  
-  #sidebar {
-    width: 260px;
-    background: #111;
-    color: #eee;
-    padding: 20px;
-    box-sizing: border-box;
-  }
-  
-  #sidebar h1 {
-    font-size: 20px;
-    margin-top: 0;
-  }
-  
-  #sidebar select, #sidebar input {
-    width: 100%;
-    margin: 8px 0;
-    padding: 6px;
-    border-radius: 6px;
-    border: none;
-  }
-  
-  #canvas {
-    flex: 1;
-    background: #1a1a1a;
-    cursor: crosshair;
-  }
-  
-  #statusView {
-      
-    font-family: "Inconsolata", "JetBrains Mono", monospace;
-    font-size: 13px;
-    color: #f0f0f0;
-  
-    margin-top: 10px;
-    white-space: pre-wrap;
-  }
-  
-  
-  
-  
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  display: flex;
+  height: 100vh;
+}
+
+#sidebar {
+  width: 260px;
+  background: #111;
+  color: #eee;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+#sidebar h1 {
+  font-size: 20px;
+  margin-top: 0;
+}
+
+#sidebar select,
+#sidebar input {
+  width: 100%;
+  margin: 8px 0;
+  padding: 6px;
+  border-radius: 6px;
+  border: none;
+}
+
+#sidebar #speedSlider {
+  margin-bottom: 5px;
+  padding: 0;
+}
+
+#sidebar small {
+  display: block;
+  margin-top: -5px;
+  line-height: 1;
+}
+
+#canvas {
+  flex: 1;
+  background: #1a1a1a;
+  cursor: crosshair;
+}
+
+#statusView {
+  font-family: "Inconsolata", "JetBrains Mono", monospace;
+  font-size: 13px;
+  color: #e0e7ff;
+  /* Light indigo text */
+  margin-top: 16px;
+  white-space: pre-wrap;
+
+  background: #1f2937;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid #374151;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  display: none;
+  /* Hidden by default */
+}
+
+
+.button-group {
+  display: flex;
+  justify-content: space-between;
+}
+
+/* Button Styling */
+button {
+  cursor: pointer;
+  font-family: inherit;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 12px;
+  margin: 4px 2px;
+  font-weight: 600;
+  transition: transform 0.1s, opacity 0.2s;
+}
+
+button:active {
+  transform: scale(0.96);
+}
+
+.primary-btn {
+  background: #6366f1;
+  /* Indigo 500 */
+  color: white;
+  width: 48%;
+  /* Split width for Run/Reset */
+}
+
+.primary-btn:hover {
+  background: #4f46e5;
+}
+
+.secondary-btn {
+  background: #4b5563;
+  /* Gray 600 */
+  color: white;
+  width: 48%;
+}
+
+.secondary-btn:hover {
+  background: #374151;
+}
+
+.toggle-btn {
+  background: #1f2937;
+  /* Gray 800 */
+  color: #d1d5db;
+  width: 100%;
+  /* Full width for toggles */
+  margin-top: 4px;
+  border: 1px solid #374151;
+}
+
+.toggle-btn:hover {
+  background: #374151;
+  color: white;
+}
