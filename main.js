@@ -119,6 +119,13 @@ function renderPQ() {
 algoSelect.onchange = () => {
   stopAnimation();
   const algo = algoSelect.value;
+
+  // Toggle K input for Yen
+  const kContainer = document.getElementById("yenKContainer");
+  if (kContainer) {
+    kContainer.style.display = (algo === "yen") ? "block" : "none";
+  }
+
   vizState.tin = [];
   vizState.tout = [];
   vizState.level = [];
@@ -139,6 +146,9 @@ algoSelect.onchange = () => {
   renderStatus();
   renderPQ();
   drawGraph();
+
+  const yenContainer = document.getElementById("yenPathButtons");
+  if (yenContainer) yenContainer.innerHTML = "";
 };
 
 
@@ -159,7 +169,7 @@ runBtn.onclick = () => {
   // ---- handle end node depending on algorithm ----
   const endRaw = endInput.value.trim();
 
-  if (algo === "dijkstra" || algo === "astar" || algo === "astar2") {
+  if (algo === "dijkstra" || algo === "astar" || algo === "astar2" || algo === "yen") {
     // end is REQUIRED
     currentEnd = parseInt(endRaw, 10);
     if (Number.isNaN(currentEnd) || currentEnd < 0 || currentEnd >= graph.nodes.length) {
@@ -220,6 +230,10 @@ runBtn.onclick = () => {
 
   // Clear status for new run
   vizState.status = "";
+  // Clear Yen buttons for new run
+  const yenContainer = document.getElementById("yenPathButtons");
+  if (yenContainer) yenContainer.innerHTML = "";
+
   renderStatus();
   renderPQ();
   drawGraph();
@@ -237,6 +251,14 @@ runBtn.onclick = () => {
     it = dfs(graph, currentStart, currentEnd);
   } else if (algo === "mst") {
     it = mstKruskal(graph);
+  } else if (algo === "yen") {
+    const kInput = document.getElementById("yenK");
+    let kVal = parseInt(kInput.value, 10);
+    if (Number.isNaN(kVal) || kVal < 2 || kVal > 5) {
+      alert("K must be between 2 and 5");
+      return;
+    }
+    it = yen(graph, currentStart, currentEnd, kVal);
   }
 
   if (it) runAnimation(it);
@@ -275,6 +297,9 @@ resetBtn.onclick = () => {
   if (vizState.exploredEdges) vizState.exploredEdges.clear();
   if (vizState.exploredF) vizState.exploredF.clear();
   if (vizState.exploredB) vizState.exploredB.clear();
+
+  const yenContainer = document.getElementById("yenPathButtons");
+  if (yenContainer) yenContainer.innerHTML = "";
 
   renderStatus();
   renderPQ();
@@ -315,6 +340,9 @@ if (clearBtn) {
     if (vizState.exploredEdges) vizState.exploredEdges.clear();
     if (vizState.exploredF) vizState.exploredF.clear();
     if (vizState.exploredB) vizState.exploredB.clear();
+
+    const yenContainer = document.getElementById("yenPathButtons");
+    if (yenContainer) yenContainer.innerHTML = "";
 
     renderStatus();
     renderPQ();
@@ -427,6 +455,16 @@ function animate(evt) {
     vizState.activeEdge = edgeKey(u, v);
   } else if (evt.type === "exit") {
     vizState.activeEdge = null;
+  } else if (evt.type === "yen-path-found") {
+    // Creating a button for the found path
+    const container = document.getElementById("yenPathButtons");
+    if (container) {
+      const btn = document.createElement("button");
+      btn.className = "yen-path-btn";
+      btn.textContent = `Path ${evt.k}: Dist ${evt.dist.toFixed(2)}`;
+      btn.onclick = () => renderYenPath(evt.path, evt.dist, btn);
+      container.appendChild(btn);
+    }
   }
 
   // extra visited marking for bidirectional A*
@@ -470,7 +508,7 @@ function animate(evt) {
     const algoNow = vizState.currentAlgo;
 
     if (evt.noPath) {
-      if (algoNow === "dijkstra" || algoNow === "astar" || algoNow === "astar2") {
+      if (algoNow === "dijkstra" || algoNow === "astar" || algoNow === "astar2" || algoNow === "yen") {
         vizState.status = `No path from ${currentStart} to ${currentEnd}.`;
       } else if (algoNow === "bfs" || algoNow === "dfs") {
         vizState.status =
@@ -480,7 +518,7 @@ function animate(evt) {
       }
     } else if (
       evt.distance != null &&
-      (algoNow === "dijkstra" || algoNow === "astar" || algoNow === "astar2")
+      (algoNow === "dijkstra" || algoNow === "astar" || algoNow === "astar2" || algoNow === "yen")
     ) {
       vizState.status =
         `Shortest distance from ${currentStart} to ${currentEnd}: ${evt.distance.toFixed(2)}`;
@@ -500,3 +538,30 @@ function animate(evt) {
 window.addEventListener("load", () => {
   loadDefaultCityGraph();
 });
+
+// ------------------ YEN PATH RENDERING ------------------ //
+function renderYenPath(pathNodes, dist, btnElement) {
+  // Highlight the button
+  const allBtns = document.querySelectorAll(".yen-path-btn");
+  allBtns.forEach(b => b.classList.remove("active"));
+  if (btnElement) btnElement.classList.add("active");
+
+  // Update vizState to show this path
+  vizState.path.clear();
+  vizState.pathEdges.clear();
+
+  if (pathNodes && pathNodes.length > 0) {
+    for (const node of pathNodes) {
+      vizState.path.add(node);
+    }
+    for (let i = 0; i < pathNodes.length - 1; i++) {
+      const u = pathNodes[i];
+      const v = pathNodes[i + 1];
+      vizState.pathEdges.add(edgeKey(u, v));
+    }
+  }
+
+  vizState.status = `Selected Path Distance: ${dist.toFixed(2)}`;
+  renderStatus();
+  drawGraph();
+}

@@ -20,7 +20,13 @@
       <option value="bfs">BFS</option>
       <option value="dfs">DFS</option>
       <option value="mst">MST (Kruskal)</option>
+      <option value="yen">Yen's K-Shortest Paths</option>
     </select>
+
+    <div id="yenKContainer" style="display: none;">
+      <label>K (2-5)</label>
+      <input id="yenK" type="number" min="2" max="5" value="5">
+    </div>
 
     <label>Start Node</label>
     <input id="startNode" placeholder="0">
@@ -51,6 +57,7 @@
 
     <div id="statusView"></div>
     <div id="pqView"></div>
+    <div id="yenPathButtons"></div>
   </div>
 
   <svg id="canvas"></svg>
@@ -60,6 +67,7 @@
   <script src="algorithms/astar.js"></script>
   <script src="algorithms/traversals.js"></script>
   <script src="algorithms/mst_kruskal.js"></script>
+  <script src="algorithms/yen.js"></script>
   <script src="render.js"></script>
   <script src="city_graph.js"></script>
   <script src="main.js"></script>
