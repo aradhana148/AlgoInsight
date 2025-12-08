@@ -382,7 +382,7 @@ function runAnimation(iterator) {
     animate(res.value);
 
     const sliderVal = Number(speedSlider.value);
-    const minDelay = 10;
+    const minDelay = 0;
     const maxDelay = 1000;
     const delay = maxDelay - (sliderVal / 1000) * (maxDelay - minDelay);
 

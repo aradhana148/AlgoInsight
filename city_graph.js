@@ -69,7 +69,7 @@ function loadDefaultCityGraph() {
   // 2. Generate Connected Graph inside each Rectangle
   rectangles.forEach(rect => {
     // Number of nodes proportional to area, or random 6-9
-    const numNodes = Math.floor(Math.random() * 4) + 6;
+    const numNodes = Math.floor(Math.random() * 4) + 9;
     const localNodes = [];
 
     // Create nodes
@@ -77,7 +77,7 @@ function loadDefaultCityGraph() {
       const nx = rect.x + Math.random() * rect.w;
       const ny = rect.y + Math.random() * rect.h;
       // Keep away from edges lightly for aesthetics
-      const padding = 10;
+      const padding = 0;
       const clampedX = Math.max(rect.x + padding, Math.min(rect.x + rect.w - padding, nx));
       const clampedY = Math.max(rect.y + padding, Math.min(rect.y + rect.h - padding, ny));
 
@@ -219,6 +219,14 @@ function loadDefaultCityGraph() {
         }
       }
     }
+  }
+
+  // Set default start/end nodes
+  const startInput = document.getElementById("startNode");
+  const endInput = document.getElementById("endNode");
+  if (startInput && endInput && graph.nodes.length > 0) {
+    startInput.value = 0;
+    endInput.value = graph.nodes.length - 1;
   }
 
   drawGraph();

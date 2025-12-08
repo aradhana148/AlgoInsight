@@ -50,12 +50,92 @@ function getNodeAtPosition(x, y) {
   return null;
 }
 
-// --- Event listeners: left-click = add node / add edge, right-click = delete node ---
-canvas.addEventListener("click", handleLeftClick);
+// --- Event listeners ---
+canvas.addEventListener("mousedown", handleMouseDown);
+canvas.addEventListener("mousemove", handleMouseMove);
+canvas.addEventListener("mouseup", handleMouseUp);
 canvas.addEventListener("contextmenu", handleRightClick);
+// We handle 'click' logic manually or via click listener with check
+canvas.addEventListener("click", handleLeftClick);
 
-// LEFT CLICK: add node OR create edge
+// Drag state
+let draggingNodeId = null;
+let isDragging = false;
+let dragStartX = 0;
+let dragStartY = 0;
+
+function handleMouseDown(e) {
+  const pt = canvas.createSVGPoint();
+  pt.x = e.clientX;
+  pt.y = e.clientY;
+  const svgP = pt.matrixTransform(canvas.getScreenCTM().inverse());
+
+  const hitNode = getNodeAtPosition(svgP.x, svgP.y);
+  if (hitNode) {
+    draggingNodeId = hitNode.id;
+    isDragging = false; // Haven't moved yet
+    dragStartX = svgP.x;
+    dragStartY = svgP.y;
+  }
+}
+
+function handleMouseMove(e) {
+  if (draggingNodeId !== null) {
+    const pt = canvas.createSVGPoint();
+    pt.x = e.clientX;
+    pt.y = e.clientY;
+    const svgP = pt.matrixTransform(canvas.getScreenCTM().inverse());
+
+    // Check if moved enough to consider it a drag
+    if (!isDragging) {
+      const dist = Math.hypot(svgP.x - dragStartX, svgP.y - dragStartY);
+      if (dist > 3) {
+        isDragging = true;
+      }
+    }
+
+    if (isDragging) {
+      const node = graph.nodes[draggingNodeId];
+      if (node) {
+        node.x = svgP.x;
+        node.y = svgP.y;
+
+        // Update edge weights connected to this node dynamically? 
+        // We probably should if we want accurate physics, but existing code calculates weight on creation.
+        // If we move nodes, the "weight" (Euclidean) should effectively change if we were generating fresh.
+        // But for graph algos, usually weights are fixed properties of edges unless we say it's purely geometric.
+        // Let's update weights for connected edges to keep it consistent with the visual length.
+        updateConnectedEdgeWeights(draggingNodeId);
+
+        drawGraph();
+      }
+    }
+  }
+}
+
+function handleMouseUp(e) {
+  // Clearing dragging state is handled here, 
+  // but we wait for click event to handle "click" logic if not dragged.
+  // Actually, simpler to just clear it in click or after a timeout?
+  // No, must clear here so subsequent mouse moves don't drag.
+  if (draggingNodeId !== null) {
+    // We don't unset draggingNodeId immediately if we want to check in click?
+    // But click fires *during* or right after mouseup.
+    // Let's rely on isDragging flag in click handler.
+    setTimeout(() => {
+      draggingNodeId = null;
+      isDragging = false;
+    }, 0);
+  }
+}
+
+// LEFT CLICK: add node OR create edge (only if not dragged)
 function handleLeftClick(e) {
+  if (isDragging) {
+    // It was a drag operation, not a click. Stop here.
+    return;
+  }
+
   const pt = canvas.createSVGPoint();
   pt.x = e.clientX;
   pt.y = e.clientY;
@@ -278,6 +358,8 @@ function drawGraph() {
       const inF = vizState.visitedF.has(n.id);
       const inB = vizState.visitedB.has(n.id);
 
+
+
       if (inF && inB) {
         fill = "#ff00ff";     // both directions met (purple)
       } else if (inF) {
@@ -356,4 +438,35 @@ function drawGraph() {
       }
     }
   });
+}
+
+function updateConnectedEdgeWeights(nodeId) {
+  // Find all edges connected to nodeId
+  // Since graph.edges contains {u, v, w}, we can iterate and update
+  const node = graph.nodes[nodeId];
+  if (!node) return;
+
+  for (const edge of graph.edges) {
+    if (edge.u === nodeId || edge.v === nodeId) {
+      const u = graph.nodes[edge.u];
+      const v = graph.nodes[edge.v];
+      if (u && v) {
+        const dx = u.x - v.x;
+        const dy = u.y - v.y;
+        edge.w = Math.sqrt(dx * dx + dy * dy);
+
+        // Also update adjacency list weights (graph.adj)
+        // This is a bit heavy, we have to find the specific entry in array
+        // graph.adj.get(u) -> find {v: v.id} -> update w
+
+        const adjU = graph.adj.get(u.id);
+        const entryU = adjU.find(e => e.v === v.id);
+        if (entryU) entryU.w = edge.w;
+
+        const adjV = graph.adj.get(v.id);
+        const entryV = adjV.find(e => e.v === u.id);
+        if (entryV) entryV.w = edge.w;
+      }
+    }
+  }
 }
