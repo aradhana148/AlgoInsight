@@ -9,8 +9,52 @@ body {
   width: 260px;
   background: #111;
   color: #eee;
-  padding: 20px;
+  padding: 5px;
   box-sizing: border-box;
+  transition: width 0.3s ease, padding 0.3s ease;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+#sidebar.collapsed {
+  width: 50px;
+  padding: 5px 5px;
+}
+
+#sidebarContent {
+  width: 245px;
+  /* Fixed width to prevent wrapping issues when sliding */
+  transition: opacity 0.2s;
+  flex: 1;
+  overflow-y: auto;
+}
+
+#sidebar.collapsed #sidebarContent {
+  opacity: 0;
+  pointer-events: none;
+  display: none;
+  /* simple hide */
+}
+
+#toggleSidebarBtn {
+  background: none;
+  border: 1px solid #333;
+  color: #aaa;
+  cursor: pointer;
+  font-size: 18px;
+  border-radius: 4px;
+  margin-bottom: 10px;
+  align-self: flex-start;
+  padding: 4px 8px;
+  width: 32px;
+  text-align: center;
+}
+
+#toggleSidebarBtn:hover {
+  background: #222;
+  color: #fff;
 }
 
 #sidebar h1 {
@@ -18,9 +62,16 @@ body {
   margin-top: 0;
 }
 
-#sidebar select,
-#sidebar input {
+#sidebar select {
   width: 100%;
+  margin: 8px 0;
+  padding: 6px;
+  border-radius: 6px;
+  border: none;
+}
+
+#sidebar input {
+  width: 95%;
   margin: 8px 0;
   padding: 6px;
   border-radius: 6px;
@@ -110,7 +161,7 @@ button:active {
   background: #1f2937;
   /* Gray 800 */
   color: #d1d5db;
-  width: 100%;
+  width: 98.5%;
   /* Full width for toggles */
   margin-top: 4px;
   border: 1px solid #374151;

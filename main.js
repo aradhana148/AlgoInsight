@@ -565,3 +565,20 @@ function renderYenPath(pathNodes, dist, btnElement) {
   renderStatus();
   drawGraph();
 }
+
+
+// ------------------ SIDEBAR TOGGLE ------------------ //
+const toggleSidebarBtn = document.getElementById("toggleSidebarBtn");
+const sidebar = document.getElementById("sidebar");
+
+if (toggleSidebarBtn && sidebar) {
+  toggleSidebarBtn.onclick = () => {
+    sidebar.classList.toggle("collapsed");
+    // Force redraw to adjust canvas size if needed (though it's SVG so it might just reflow)
+    // The SVG has flex: 1, so it should resize. 
+    // We might need to update graph bounds if we were doing canvas constraints, 
+    // but current code uses SVG coordinates based on initial load.
+    // If the window resizes, we might want to reload or just let it be.
+    // Simple toggle is enough for now.
+  };
+}
