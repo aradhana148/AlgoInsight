@@ -100,6 +100,11 @@ function handleMouseMove(e) {
         node.x = svgP.x;
         node.y = svgP.y;
 
+        // Also update logical position
+        const scaleX = vizState.currentScaleX || 1.0;
+        node.logicX = node.x / scaleX;
+        node.logicY = node.y;
+
         // Update edge weights connected to this node dynamically? 
         // We probably should if we want accurate physics, but existing code calculates weight on creation.
         // If we move nodes, the "weight" (Euclidean) should effectively change if we were generating fresh.
@@ -166,7 +171,11 @@ function handleLeftClick(e) {
     }
   } else {
     // no node hit -> add a new node
-    const id = graph.addNode(svgP.x, svgP.y);
+    const scaleX = vizState.currentScaleX || 1.0;
+    const logicX = svgP.x / scaleX;
+    const logicY = svgP.y; // Y is not scaled currently
+
+    const id = graph.addNode(svgP.x, svgP.y, logicX, logicY);
     edgeStartNodeId = null;
 
     // ensure tin/tout/level arrays are long enough

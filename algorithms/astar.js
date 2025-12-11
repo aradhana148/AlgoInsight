@@ -1,74 +1,80 @@
 function heuristic(graph, u, goal) {
-    const nu = graph.nodes[u];
-    const ng = graph.nodes[goal];
-    if (!nu || !ng) return 0;
-    const dx = nu.x - ng.x;
-    const dy = nu.y - ng.y;
-    return Math.sqrt(dx * dx + dy * dy);
+  const nu = graph.nodes[u];
+  const ng = graph.nodes[goal];
+  if (!nu || !ng) return 0;
+  // Use logical coordinates if available, else fall back to visual
+  const ux = (nu.logicX !== undefined) ? nu.logicX : nu.x;
+  const uy = (nu.logicY !== undefined) ? nu.logicY : nu.y;
+  const gx = (ng.logicX !== undefined) ? ng.logicX : ng.x;
+  const gy = (ng.logicY !== undefined) ? ng.logicY : ng.y;
+
+  const dx = ux - gx;
+  const dy = uy - gy;
+  return Math.sqrt(dx * dx + dy * dy);
+}
+
+function* astar(graph, start, end) {
+  const n = graph.nodes.length;
+  const g = Array(n).fill(Infinity);
+  const f = Array(n).fill(Infinity);
+  const parent = Array(n).fill(-1);
+  const closed = Array(n).fill(false);
+
+  const pq = []; // { node, g, f }
+  g[start] = 0;
+  f[start] = heuristic(graph, start, end);
+  pq.push({ node: start, g: g[start], f: f[start] });
+
+  function snapshotTop() {
+    const sorted = [...pq].sort((a, b) => a.f - b.f);
+    return sorted.slice(0, 5).map(e => ({ node: e.node, g: e.g, f: e.f }));
   }
-  
-  function* astar(graph, start, end) {
-    const n = graph.nodes.length;
-    const g = Array(n).fill(Infinity);
-    const f = Array(n).fill(Infinity);
-    const parent = Array(n).fill(-1);
-    const closed = Array(n).fill(false);
-  
-    const pq = []; // { node, g, f }
-    g[start] = 0;
-    f[start] = heuristic(graph, start, end);
-    pq.push({ node: start, g: g[start], f: f[start] });
-  
-    function snapshotTop() {
-      const sorted = [...pq].sort((a, b) => a.f - b.f);
-      return sorted.slice(0, 5).map(e => ({ node: e.node, g: e.g, f: e.f }));
-    }
-  
-    const endValid = typeof end === "number" && end >= 0 && end < n;
-  
-    while (pq.length > 0) {
-      pq.sort((a, b) => a.f - b.f);
-      const { node: u, g: gu, f: fu } = pq.shift();
-  
-      if (closed[u]) continue;
-      closed[u] = true;
-  
-      yield { type: "visit", node: u, pqTop: snapshotTop() };
-  
-      if (endValid && u === end) break;
-  
-      for (const { v, w } of graph.adj.get(u) || []) {
-        if (closed[v]) continue;
-        const tentativeG = gu + w;
-        if (tentativeG < g[v]) {
-          g[v] = tentativeG;
-          f[v] = tentativeG + (endValid ? heuristic(graph, v, end) : 0);
-          parent[v] = u;
-          pq.push({ node: v, g: g[v], f: f[v] });
-          yield { type: "relax", edge: [u, v], pqTop: snapshotTop() };
-        }
+
+  const endValid = typeof end === "number" && end >= 0 && end < n;
+
+  while (pq.length > 0) {
+    pq.sort((a, b) => a.f - b.f);
+    const { node: u, g: gu, f: fu } = pq.shift();
+
+    if (closed[u]) continue;
+    closed[u] = true;
+
+    yield { type: "visit", node: u, pqTop: snapshotTop() };
+
+    if (endValid && u === end) break;
+
+    for (const { v, w } of graph.adj.get(u) || []) {
+      if (closed[v]) continue;
+      const tentativeG = gu + w;
+      if (tentativeG < g[v]) {
+        g[v] = tentativeG;
+        f[v] = tentativeG + (endValid ? heuristic(graph, v, end) : 0);
+        parent[v] = u;
+        pq.push({ node: v, g: g[v], f: f[v] });
+        yield { type: "relax", edge: [u, v], pqTop: snapshotTop() };
       }
     }
-  
-    if (!endValid || g[end] === Infinity) {
-      yield { type: "done", noPath: true, pqTop: [] };
-      return;
-    }
-  
-    const path = [];
-    for (let cur = end; cur !== -1; cur = parent[cur]) {
-      path.push(cur);
-    }
-    path.reverse();
-  
-    yield {
-      type: "done",
-      path,
-      distance: g[end],
-      pqTop: []
-    };
   }
-  
+
+  if (!endValid || g[end] === Infinity) {
+    yield { type: "done", noPath: true, pqTop: [] };
+    return;
+  }
+
+  const path = [];
+  for (let cur = end; cur !== -1; cur = parent[cur]) {
+    path.push(cur);
+  }
+  path.reverse();
+
+  yield {
+    type: "done",
+    path,
+    distance: g[end],
+    pqTop: []
+  };
+}
+
 // ---------- Bidirectional A* (Double A*) with two heaps ----------
 
 function* astarBidirectional(graph, start, end) {

@@ -571,14 +571,58 @@ function renderYenPath(pathNodes, dist, btnElement) {
 const toggleSidebarBtn = document.getElementById("toggleSidebarBtn");
 const sidebar = document.getElementById("sidebar");
 
+function resizeGraphX() {
+  const svg = document.getElementById("canvas");
+  if (!svg) return;
+
+  const currentW = svg.clientWidth;
+
+  // If we don't have a previous width (from city_graph.js), set it now (first run)
+  if (!window.lastGraphWidth) {
+    window.lastGraphWidth = currentW;
+    return;
+  }
+
+  // If width hasn't changed significantly, skip
+  if (Math.abs(currentW - window.lastGraphWidth) < 2) return;
+
+  const scale = currentW / window.lastGraphWidth;
+
+  if (graph && graph.nodes) {
+    graph.nodes.forEach(node => {
+      if (node) {
+        // Scale the X coordinate
+        node.x = node.x * scale;
+      }
+    });
+
+    // Update global width tracker
+    window.lastGraphWidth = currentW;
+
+    // Track the accumulated scale (approximate) or just current visual scale
+    // We can just calculate current scale relative to base if we knew base.
+    // But logicX is fixed. So existing nodes are fine.
+    // For new nodes, we need to know "what is the current X expansion relative to logic world?"
+    // If logic world is 1.0.
+    // We can infer scale from a sample node if we want, but simplest is to track it.
+    // Let's assume logic scale is 1.0 initially.
+    if (!vizState.currentScaleX) vizState.currentScaleX = 1.0;
+    vizState.currentScaleX *= scale;
+
+    // Redraw the graph at new coordinates
+    // Note: Edge weights are deliberately NOT updated to preserve logical structure
+    // as per user request ("scale look wise, keep edge weights same").
+    drawGraph();
+  }
+}
+
 if (toggleSidebarBtn && sidebar) {
   toggleSidebarBtn.onclick = () => {
     sidebar.classList.toggle("collapsed");
-    // Force redraw to adjust canvas size if needed (though it's SVG so it might just reflow)
-    // The SVG has flex: 1, so it should resize. 
-    // We might need to update graph bounds if we were doing canvas constraints, 
-    // but current code uses SVG coordinates based on initial load.
-    // If the window resizes, we might want to reload or just let it be.
-    // Simple toggle is enough for now.
+
+    // Wait for the CSS transition (0.3s) to finish before resizing
+    setTimeout(() => {
+      resizeGraphX();
+    }, 320);
   };
 }

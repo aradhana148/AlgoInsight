@@ -11,6 +11,9 @@ function loadDefaultCityGraph() {
     H = 500;
   }
 
+  // Store the actual width used for generation to support resizing later
+  window.lastGraphWidth = W;
+
   // 1. Recursive Rectangle Subdivision (BSP)
   const MIN_SIZE = 80; // Minimum width/height of a rectangle
   const rectangles = [];

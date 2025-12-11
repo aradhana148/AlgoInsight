@@ -5,9 +5,12 @@ class Graph {
     this.adj = new Map();     // id -> [{v, w}, ...]
   }
 
-  addNode(x, y) {
+  addNode(x, y, logicX, logicY) {
     const id = this.nodes.length;
-    this.nodes.push({ id, x, y });
+    // If logicX/Y not provided, default to x/y (1:1 scale initially)
+    const lx = (logicX !== undefined) ? logicX : x;
+    const ly = (logicY !== undefined) ? logicY : y;
+    this.nodes.push({ id, x, y, logicX: lx, logicY: ly });
     this.adj.set(id, []);
     return id;
   }
